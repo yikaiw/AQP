@@ -133,8 +133,3 @@ class CsvSaver(object):
                 print(',', int(round(pollution)), file=write_file, end='', sep='')
             print('', file=write_file, end='\n')
         write_file.close()
-
-
-if __name__ == '__main__':
-    url_reader = UrlReader()
-    url_reader.save_average_data()
