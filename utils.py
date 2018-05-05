@@ -37,13 +37,15 @@ def crawler_average(url=None, csv_file=None):
 
 
 class UrlReader(object):
-    def __init__(self, duration='2018-04-1-0/2018-04-23-23'):
+    def __init__(self, duration='2018-04-1-0/2018-04-23-23', city='bj'):
         self.duration = duration
         self.bj_url = 'https://biendata.com/competition/airquality/bj/' + duration + '/2k0d1d8'
         self.ld_url = 'https://biendata.com/competition/airquality/ld/' + duration + '/2k0d1d8'
         self.output_file_name = ['average-bj.csv', 'average-ld.csv']
+        self.city = city
 
-    def read_with_time(self, city='bj'):
+    def read_with_time(self):
+        city = self.city
         start_date = time.strptime(self.duration.split('/')[0], '%Y-%m-%d-%H')
         start_date = datetime.datetime(*start_date[:3])
         end_date = time.strptime(self.duration.split('/')[1], '%Y-%m-%d-%H')
@@ -57,7 +59,9 @@ class UrlReader(object):
         for line in reader:
             if line['station_id'] not in STATIONS[city]:
                 continue
-            if (not line['PM25_Concentration']) or (not line['PM10_Concentration']) or (not line['O3_Concentration']):
+            if (not line['PM25_Concentration']) or (not line['PM10_Concentration']):
+                continue
+            if (city == 'bj') and (not line['O3_Concentration']):
                 continue
             line_time = time.strptime(line['time'], '%Y-%m-%d %H:%M:%S')
             line_date = datetime.datetime(*line_time[:3])
@@ -67,7 +71,8 @@ class UrlReader(object):
             url_data['station'].append(STATIONS[city].index(line['station_id']))
             url_data['pm25'].append(float(line['PM25_Concentration']))
             url_data['pm10'].append(float(line['PM10_Concentration']))
-            url_data['o3'].append(float(line['O3_Concentration']))
+            if city == 'bj':
+                url_data['o3'].append(float(line['O3_Concentration']))
 
         return url_data
 
@@ -115,19 +120,21 @@ class CsvReader(object):
 
 
 class CsvSaver(object):
-    def __init__(self, x_data, y_data, city='bj', filename='untitled.csv'):
+    def __init__(self, x_data, y_data, city='bj', filename='untitled.csv', day=0):
         self.x_data = x_data  # (None, 3) station_id, day, hour
         self.y_data = y_data  # (None, 3) pm25, pm10, o3
+        self.day = day
         self.city = city
         self.filename = filename
 
     def save(self):
-        write_file = open(self.filename, 'w')
-        print('test_id,PM2.5,PM10,O3', file=write_file)
+        write_file = open(self.filename, 'a')
+        if self.city == 'bj' and self.day == 0:
+            print('test_id,PM2.5,PM10,O3', file=write_file)
         for i in range(self.x_data.shape[0]):
             station_id = int(self.x_data[i][0])
             print(STATIONS[self.city][station_id], file=write_file, end='')
-            hour = int(self.x_data[i][2])
+            hour = int(self.x_data[i][2]) + self.day * 24
             print('#', hour, file=write_file, end='', sep='')
             for pollution in self.y_data[i]:
                 print(',', int(round(pollution)), file=write_file, end='', sep='')
