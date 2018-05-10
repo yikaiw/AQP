@@ -32,6 +32,7 @@ if __name__ == '__main__':
             regr_rf.fit(x_train_data, y_train_data)
 
             y_rf = regr_rf.predict(x_predict_data)
+            y_rf[y_rf < 0] = 0
             filename = 'sub.csv'
             csv_saver = utils.CsvSaver(x_data, y_rf, city, filename, day=i)
             csv_saver.save()
